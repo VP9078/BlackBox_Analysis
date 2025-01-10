@@ -1,8 +1,8 @@
-library(dplyr)
 library(stringr)
 library(rhdf5)
 library(writexl)
-library(ggplot2)
+
+# Set working directory to directory with all tracking files
 
 ### Load Tracking Data code:
 tracking_load <- function(file_path, tag){
@@ -178,7 +178,6 @@ get_speed_avg <- function(tag, body_part) {
 }
 
 ### Process Files
-setwd("/Users/vihaa/Library/CloudStorage/Box-Box/Sarah/Collaborations/Zhang, Chun-Li/C57BL6J SCI Experiment/Black Box Data/All tracking files")
 files <- list.files()
 
 # Time points and dataframe
@@ -251,5 +250,4 @@ for (i in seq_along(index_map)) {
     tracking_metrics_orig[orig_index_map[i]:(orig_index_map[i] + 7), ]
 }
 
-
-write_xlsx(tracking_metrics, "/Users/vihaa/Downloads/tracking_metrics.xlsx", format_headers = T)
+write_xlsx(tracking_metrics, "tracking_metrics.xlsx", format_headers = T)
