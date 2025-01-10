@@ -7,18 +7,15 @@ library(ggplot2)
 library(rhdf5)
 library(stringr)
 
-
 #### Run Functions (defined below)
 # load_tracking_data() # loads in the data
 # body_parts # plots body parts available for tracking
 
 # plot_likelihood("control", "hip") # mouse centroid
 
-#plot_speed("control", "snout")
+# plot_speed("control", "snout")
 
 #### 1. Load input tracking ####
-
-pixel_to_cm <- 0.03
 
 # Function to load and process tracking data
 tracking_load <- function(){
@@ -26,13 +23,16 @@ tracking_load <- function(){
   
   tag <- readline("Give a unique tag: ")  # Prompt user to provide a tag
   
+  pixels_to_cm <<- 0.03
+  fps <<- 45
+  time_between_frames <<- 1/fps
+  
   # Make a tag dataset to save all tag datasets
   if (exists("tag_memory", envir = .GlobalEnv)) {
     tag_memory[length(tag_memory) + 1] <<- tag
   } else {
     tag_memory <<- c(tag)
   }
-  
   
   # Open the HDF5 file and read tracking data
   assign(paste0(tag, "_tracking_data"), H5Fopen(file_path), envir = .GlobalEnv)
@@ -80,58 +80,42 @@ tracking_load <- function(){
 ##################
 
 # REQUIRES: load_tracking_data() to be used at least once
+# Subset_size should be an integer between 1 and the amount of frames
+# in your video -> ncol(get(paste0(tag,"_tracking_coordinates"))))
 
 # Function to compute and plot speed for a specific body part
 plot_speed <- function (tag, body_part, subset_size = "all") {
-  
   # Setting the default subset size
   if (any(grepl("all", subset_size)))
     subset_size = 1:ncol(get(paste0(tag,"_tracking_coordinates")))
   
-  # Initialize speed and distance vectors
-  assign(paste0(tag, "_distances"), numeric())
-  distances <- get(paste0(tag, "_distances"))
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  assign(paste0(tag, "_speeds"), numeric())
-  speeds <- get(paste0(tag, "_speeds"))
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
+  x_row <- x_row * pixels_to_cm
+  y_row <- y_row * pixels_to_cm
   
-  # Set frame rate and calculate video length
-  fps <- 45
-  time_between_frames <- 1/fps
-  vid_length <- time_between_frames * ncol(get(paste0(tag, "_tracking_coordinates")))
+  # Make coordinate data frame
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
+
+  vid_length <- time_between_frames * nrow(coord_df)
   
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_coordinates"))[x_row_index,]
-  x_row <- unlist(x_row)
-  
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_coordinates"))[y_row_index,]
-  y_row <- unlist(y_row)
-  
-  # Calculate distances between consecutive points
-  for (i in 2:ncol(get(paste0(tag, "_tracking_coordinates")))) {
-    distances[i-1] <- sqrt((x_row[i] - x_row[i-1])^2 + (y_row[i] - y_row[i-1])^2)
-  }
-  distances <- unlist(distances)
-  distances <- distances * pixel_to_cm
-  
-  # Compute speeds as distances per frame
-  for (i in 1:length(distances)) {
-    speeds[i] <- distances[i]/time_between_frames
-  }
-  assign(paste0(tag, "_",body_part, "_speed_values"), speeds, envir = .GlobalEnv)
+  # Compute distances, and speeds
+  distances <- sqrt(diff(x_row)^2 + diff(y_row)^2)
+  speeds <- distances / time_between_frames
   
   # Create a time vector for plotting
   time_vector <- seq(from = time_between_frames, to = (vid_length - time_between_frames), by = time_between_frames)
   
   # Combine time vector and speed values into a dataframe
-  assign(paste0(tag, "_speed_df"), data.frame(time_vector, get(paste0(tag, "_",body_part, "_speed_values"))), envir = .GlobalEnv)
+  assign(paste0(tag, "_speed_df"), data.frame(time_vector, speeds), envir = .GlobalEnv)
   speed_df <- get(paste0(tag, "_speed_df"))[subset_size,]
   
   # Generate speed plot
-  assign(paste0(tag, "_", body_part, "_speed_plot"),
-         ggplot(speed_df, aes(x = time_vector, y = (get(paste0(tag, "_",body_part, "_speed_values"))[subset_size]))) +
+  speed_plot <- ggplot(speed_df, aes(x = time_vector, y = speeds)[subset_size]) +
            geom_line(color = "blue") +
            labs(
              title = str_to_title(paste0(tag, " ", body_part, " Speed")),
@@ -142,38 +126,34 @@ plot_speed <- function (tag, body_part, subset_size = "all") {
            theme(
              plot.title = element_text(face = "bold", hjust = 0.5)  # Center the title and make it bold
            )
-         , envir = .GlobalEnv)
+  assign(paste(tag, body_part, "speed_plot", sep="_"), speed_plot, envir=.GlobalEnv)
   
   # Return the speed plot
-  get(paste0(tag, "_",body_part, "_speed_plot"))
+  return(speed_plot)
 }
 
+# Function to plot likelihood (coordinate accuracy) for a specific body part
 plot_likelihood <- function(tag, body_part, subset_size = "all") {
-  
   # Setting the default subset size
   if (any(grepl("all", subset_size)))
     subset_size = 1:ncol(get(paste0(tag,"_tracking_coordinates")))
   
-  # Set frame rate and calculate video length
-  fps <- 45
-  time_between_frames <- 1/fps
-  vid_length <- time_between_frames * ncol(get(paste0(tag, "_tracking_coordinates")))
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  ## Likelihood plotting
-  likelihood_row_index <- which(grepl("likelihood", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  likelihood_row <- get(paste0(tag, "_tracking_coordinates"))[likelihood_row_index,]
-  likelihood_row <- unlist(likelihood_row)
+  # Extract likelihood values
+  likelihood_row <- unlist(data[grep(paste0(body_part, " likelihood"), row_names), ])
+
+  vid_length <- time_between_frames * length(likelihood_row)
   
-  # Normalize time vector:
-  time_vector <- seq(from = time_between_frames, to = (vid_length), by = time_between_frames)
-  
+  time_vector <- seq(from = time_between_frames, to = vid_length, by = time_between_frames)
+
   # Make likelihood vs time dataframe
   assign(paste0(tag, "_", body_part,"_likelihood_df"), data.frame(time_vector, likelihood_row), envir = .GlobalEnv)
   likelihood_df <- get(paste0(tag, "_", body_part,"_likelihood_df"))[subset_size, ]
   
   # Plot likelihood
-  assign(paste0(tag, "_", body_part, "_likelihood_plot"),
-         ggplot(likelihood_df, aes(x = time_vector, y = likelihood_row)) +
+  likelihood_plot <- ggplot(likelihood_df, aes(x = time_vector, y = likelihood_row)) +
            geom_line(color = "blue") +
            labs(
              title = str_to_title(paste0(tag, " ", body_part, " Likelihood")),
@@ -185,44 +165,41 @@ plot_likelihood <- function(tag, body_part, subset_size = "all") {
              plot.title = element_text(face = "bold", hjust = 0.5)  # Center the title and make it bold
            ) +
            coord_cartesian(ylim = c(0, max(likelihood_row)))
-         , envir = .GlobalEnv)
+  
+  assign(paste(tag, body_part, "likelihood_plot", sep="_"), likelihood_plot, envir = .GlobalEnv)
   
   # Return the likelihood plot
-  get(paste0(tag, "_",body_part, "_likelihood_plot"))
+  return(likelihood_plot)
 }
 
-
-# Plotting Trajectory function (subset_size should be an integer between 1 and the amount of frames of your video -> (ncol(get(paste0(tag,"_tracking_coordinates")))))
+# Function to plot mouse trajectory
 plot_trajectory <- function (tag, body_part, subset_size = "all", points = FALSE, grid_size = "full") {
-  
   # Setting the default subset size
   if (any(grepl("all", subset_size)))
     subset_size = 1:ncol(get(paste0(tag,"_tracking_coordinates")))
   
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_coordinates"))[x_row_index,]
-  x_row <- unlist(x_row)
-  x_row <- x_row * pixel_to_cm
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_coordinates"))[y_row_index,]
-  y_row <- unlist(y_row)
-  y_row <- y_row * pixel_to_cm
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
+  x_row <- x_row * pixels_to_cm
+  y_row <- y_row * pixels_to_cm
   
-  # Make trajectory data frame
-  trajectory_df <- data.frame(x_row, y_row)[subset_size,]
+  # Make coordinate data frame
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))[subset_size,]
   
   # Make an index column in the dataframe
-  trajectory_df$index <- 1:nrow(trajectory_df)
+  coord_df$index <- 1:nrow(coord_df)
   
   # Set grid size
   if (grid_size == "full")
-    grid_size <- max(x_row)
+    grid_size <- 30
   
   # Generate trajectory plot
   trajectory_plot <-
-    ggplot(trajectory_df, aes(x = x_row, y = y_row)) +
+    ggplot(coord_df, aes(x = x_row, y = y_row)) +
     geom_path(aes(color = index)) +
     scale_color_gradientn(colors = c("blue", "green", "yellow", "red")) +
     labs(
@@ -235,45 +212,39 @@ plot_trajectory <- function (tag, body_part, subset_size = "all", points = FALSE
     theme(
       plot.title = element_text(face = "bold", hjust = 0.5)  # Center the title and make it bold
     )
-  
   if (points == TRUE)
     trajectory_plot <- trajectory_plot +
     geom_point(aes(color = index))
   
-  assign(paste0(tag, "_", body_part, "_trajectory_plot"), trajectory_plot, envir = .GlobalEnv)
-  
+  assign(paste(tag, body_part, "trajectory_plot", sep="_"), trajectory_plot, envir = .GlobalEnv)
   
   # Return the trajectory plot
-  get(paste0(tag, "_",body_part, "_trajectory_plot"))
+  return(trajectory_plot)
 }
 
-
-# Plot heatmap
+# Function to plot cage occupancy heatmap
 plot_heatmap <- function (tag, body_part, subset_size = "all", grid_size = "full") {
-  
   # Setting the default subset size
   if (any(grepl("all", subset_size)))
     subset_size = 1:ncol(get(paste0(tag,"_tracking_coordinates")))
   
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_coordinates"))[x_row_index,]
-  x_row <- unlist(x_row)
-  x_row <- x_row * pixel_to_cm
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_coordinates"))[y_row_index,]
-  y_row <- unlist(y_row)
-  y_row <- y_row * pixel_to_cm
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
+  x_row <- x_row * pixels_to_cm
+  y_row <- y_row * pixels_to_cm
+  
+  # Make coordinate data frame
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))[subset_size,]
   
   # Set grid size
   if (grid_size == "full")
-    grid_size <- 50
-  
-  # Make trajectory data frame
-  trajectory_df <- as.matrix(data.frame(x_row, y_row)[subset_size,])
-  
-  heatmap <- ggplot(trajectory_df, aes(x = x_row, y = y_row)) +
+    grid_size <- 30
+
+  heatmap <- ggplot(coord_df, aes(x = x_row, y = y_row)) +
     geom_bin_2d(bins = 50) +
     scale_fill_gradient(low = "blue", high = "red", name = "Density") +
     theme_minimal() +
@@ -284,8 +255,7 @@ plot_heatmap <- function (tag, body_part, subset_size = "all", grid_size = "full
     theme(
       plot.title = element_text(face = "bold", hjust = 0.5)  # Center the title and make it bold
     )
+  assign(paste(tag, body_part, "heatmap_plot", sep="_"), heatmap, envir = .GlobalEnv)
   
-  print(heatmap)
-  
-  assign(paste0(tag, "_", body_part, "_heatmap_plot"), heatmap, envir = .GlobalEnv)
+  return(heatmap)
 }

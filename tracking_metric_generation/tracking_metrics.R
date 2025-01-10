@@ -8,6 +8,8 @@ library(writexl)
 tracking_load <- function(file_path, tag){
   pixels_to_cm <<- 0.03
   grid_size <<- 30
+  fps <<- 45
+  time_between_frames <<- 1/fps
   
   # Open the HDF5 file and read tracking data
   assign(paste0(tag, "_tracking"), H5Fopen(file_path))
@@ -48,22 +50,17 @@ tracking_load <- function(file_path, tag){
 }
 
 get_th_ratio <- function(tag, body_part) {
-  # Setting the default subset size
-  subset_size = 1:ncol(get(paste0(tag,"_tracking_data")))
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_data"))[x_row_index,]
-  x_row <- unlist(x_row)
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
   x_row <- x_row * pixels_to_cm
-  
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_data"))[y_row_index,]
-  y_row <- unlist(y_row)
   y_row <- y_row * pixels_to_cm
   
   # Make coordinate data frame
-  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row)[subset_size,])
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
 
   cg_start <- grid_size/4
   cg_end <- 3*(grid_size/4)
@@ -79,44 +76,39 @@ get_th_ratio <- function(tag, body_part) {
 }
 
 get_accel_metrics <- function(tag, body_part) {
-  data <- get(paste0(tag, "_tracking_data"))
+  data <- get(paste0(tag, "_tracking_coordinates"))
   row_names <- rownames(data)
-  
-  # Frame rate and time
-  fps <- 45
-  time_between_frames <- 1 / fps
   
   # Extract x and y coordinates
   x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
   y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
+  x_row <- x_row * pixels_to_cm
+  y_row <- y_row * pixels_to_cm
   
+  # Make coordinate data frame
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
+
   # Compute distances, speeds, and accelerations
-  distances <- sqrt(diff(x_row)^2 + diff(y_row)^2) * pixels_to_cm
+  distances <- sqrt(diff(x_row)^2 + diff(y_row)^2)
   speeds <- distances / time_between_frames
   accels <- diff(speeds) / time_between_frames
   
   # Calculate metrics
-  c(mean = mean(accels), sd = sd(accels), max = max(accels))
+  return(c(mean = mean(accels), sd = sd(accels), max = max(accels)))
 }
 
 get_empty_bins_count <- function(tag, body_part) {
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  # Setting the default subset size
-  subset_size <- 1:ncol(get(paste0(tag, "_tracking_data")))
-  
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_data"))[x_row_index,]
-  x_row <- unlist(x_row)
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
   x_row <- x_row * pixels_to_cm
-  
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_data"))[y_row_index,]
-  y_row <- unlist(y_row)
   y_row <- y_row * pixels_to_cm
   
   # Make coordinate data frame
-  coord_df <- data.frame(x = x_row, y = y_row)[subset_size, ]
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
   
   # Define grid edges for 50x50 bins over 30x30 area
   x_edges <- seq(0, 30, length.out = 51)
@@ -140,38 +132,23 @@ get_empty_bins_count <- function(tag, body_part) {
 }
 
 get_speed_avg <- function(tag, body_part) {
-  # Initialize speed and distance vectors
-  assign(paste0(tag, "_distances"), numeric())
-  distances <- get(paste0(tag, "_distances"))
+  data <- get(paste0(tag, "_tracking_coordinates"))
+  row_names <- rownames(data)
   
-  assign(paste0(tag, "_speeds"), numeric())
-  speeds <- get(paste0(tag, "_speeds"))
+  # Extract x and y coordinates
+  x_row <- unlist(data[grep(paste0(body_part, " x"), row_names), ])
+  y_row <- unlist(data[grep(paste0(body_part, " y"), row_names), ])
+  x_row <- x_row * pixels_to_cm
+  y_row <- y_row * pixels_to_cm
   
-  # Set frame rate and calculate video length
-  fps <- 45
-  time_between_frames <- 1/fps
-  vid_length <- time_between_frames * ncol(get(paste0(tag, "_tracking_data")))
+  # Make coordinate data frame
+  coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
   
-  # Get the x and y row indices for the specified body part
-  x_row_index <- which(grepl("x", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  x_row <- get(paste0(tag, "_tracking_data"))[x_row_index,]
-  x_row <- unlist(x_row)
+  time_between_frame <- 1/fps
   
-  y_row_index <- which(grepl("y", get(paste0(tag, "_row_names"))) & grepl(body_part, get(paste0(tag, "_row_names"))))
-  y_row <- get(paste0(tag, "_tracking_data"))[y_row_index,]
-  y_row <- unlist(y_row)
-  
-  # Calculate distances between consecutive points
-  for (i in 2:ncol(get(paste0(tag, "_tracking_data")))) {
-    distances[i-1] <- sqrt((x_row[i] - x_row[i-1])^2 + (y_row[i] - y_row[i-1])^2)
-  }
-  distances <- unlist(distances)
-  distances <- distances * pixels_to_cm
-  
-  # Compute speeds as distances per frame
-  for (i in 1:length(distances)) {
-    speeds[i] <- distances[i]/time_between_frames
-  }
+  # Compute distances, and speeds
+  distances <- sqrt(diff(x_row)^2 + diff(y_row)^2)
+  speeds <- distances / time_between_frames
   
   # Average the speeds together
   return(mean(speeds))
