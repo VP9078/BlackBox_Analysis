@@ -14,6 +14,7 @@ library(rgl)
 ##### Features: Front Paws Distance (Pixel), Hind Paws Distance (Pixel), Ankle Distance (Pixel), Hip Width (Pixel), Hind Left Paw Angle (Degree), Hind Right Paw Angle (Degree), Distance Traveled (Pixel), Acceleration Variability (Standard Deviation), Empty Bins Count, Front to Hind Paw Speed Ratio
 
 ``` r
+# set working directory to contain 'Blackbox_Consolidated_Data.xlsx'
 data <- as.data.frame(read_xlsx('Blackbox_Consolidated_Data.xlsx'))
 rownames(data) <- data[,1]
 data <- data[,-1]
