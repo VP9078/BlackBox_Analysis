@@ -1,9 +1,10 @@
-PCA Analysis with MANOVA
-================
+---
+title: "PCA Analysis with MANOVA"
+output: github_document
+---
 
 ## Load Libraries
-
-``` r
+```{r load, message = FALSE}
 library(readxl)
 library(ggplot2)
 library(rgl)
@@ -13,12 +14,13 @@ library(rgl)
 
 ##### Features: Front Paws Distance (Pixel), Hind Paws Distance (Pixel), Ankle Distance (Pixel), Hip Width (Pixel), Hind Left Paw Angle (Degree), Hind Right Paw Angle (Degree), Distance Traveled (Pixel), Acceleration Variability (Standard Deviation), Empty Bins Count, Front to Hind Paw Speed Ratio
 
-``` r
+```{r preprocess, message = FALSE}
+# set working directory to contain 'Blackbox_Consolidated_Data.xlsx'
 data <- as.data.frame(read_xlsx('Blackbox_Consolidated_Data.xlsx'))
 rownames(data) <- data[,1]
 data <- data[,-1]
 
-features <- c("front_paws_distance (pixel)",    "hind_paws_distance (pixel)",   "ankle_distance (pixel)",   "hip_width (pixel)",    "hind_left_paw_angle (degree)", "hind_right_paw_angle (degree)",    "distance_traveled (pixel)",    "acceleration_variability (standard deviation)",    "empty_bins_counts", "fthp_spd_avgs")
+features <- c("front_paws_distance (pixel)",	"hind_paws_distance (pixel)",	"ankle_distance (pixel)",	"hip_width (pixel)",	"hind_left_paw_angle (degree)",	"hind_right_paw_angle (degree)",	"distance_traveled (pixel)",	"acceleration_variability (standard deviation)",	"empty_bins_counts", "fthp_spd_avgs")
 features <- features[features %in% colnames(data)]
 pca_data <- data[, features]
 
@@ -37,8 +39,7 @@ pca_df$Sample <- Sample
 ```
 
 ## PCA Plot
-
-``` r
+```{r pca_plot, warning=FALSE}
 pca_plot <- function() {
   # Filter data for SCI days 21-42
   regen_days <- c(21, 28, 35, 42)
@@ -70,11 +71,8 @@ pca_plot <- function() {
 print(pca_plot())
 ```
 
-![](Blackbox_PCA_files/figure-gfm/pca_plot-1.png)<!-- -->
-
 ## Top 5 Variables Contributing to PC1
-
-``` r
+```{r top_5}
 get_top_5 <- function () {
   loading_scores <- pca$rotation[,1]
   gene_scores <- abs(loading_scores) ## get the magnitudes
@@ -87,16 +85,8 @@ get_top_5 <- function () {
 get_top_5()
 ```
 
-    ##    hind_paws_distance (pixel)        ankle_distance (pixel) 
-    ##                    -0.4640073                    -0.4549476 
-    ## hind_right_paw_angle (degree)  hind_left_paw_angle (degree) 
-    ##                    -0.4008954                    -0.3974044 
-    ##             hip_width (pixel) 
-    ##                    -0.3248327
-
 ## Scree Plot
-
-``` r
+```{r scree_plot}
 scree_plot <- function(pca) {
   # Calculate the percentage of variance explained by each principal component
   pca.var <- pca$sdev^2
@@ -121,11 +111,8 @@ scree_plot <- function(pca) {
 scree_plot(pca)
 ```
 
-![](Blackbox_PCA_files/figure-gfm/scree_plot-1.png)<!-- -->
-
 ## MANOVA Analysis
-
-``` r
+```{r manova}
 manova_analysis <- function() {
   manova_tests <- function() {
   manova_models <- list()
@@ -181,5 +168,3 @@ ggplot(manova_pvals_df, aes(x = model, y = p_value)) +
 
 manova_analysis()
 ```
-
-![](Blackbox_PCA_files/figure-gfm/manova-1.png)<!-- -->

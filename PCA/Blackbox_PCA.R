@@ -2,7 +2,8 @@ library(readxl)
 library(ggplot2)
 library(rgl)
 
-data <- as.data.frame(read_xlsx('/Users/vihaa/Library/CloudStorage/Box-Box/Vihaan (HS Summer Intern)/Blackbox & SCI/R Scripts and data/Blackbox_Consolidated_Data.xlsx'))
+# set working directory to contain 'Blackbox_Consolidated_Data.xlsx'
+data <- as.data.frame(read_xlsx('Blackbox_Consolidated_Data.xlsx'))
 rownames(data) <- data[,1]
 data <- data[,-1]
 
