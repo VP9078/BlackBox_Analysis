@@ -12,12 +12,11 @@ tracking_load <- function(file_path, tag){
   time_between_frames <<- 1/fps
   
   # Open the HDF5 file and read tracking data
-  assign(paste0(tag, "_tracking"), H5Fopen(file_path))
-  tracking_data <- get(paste0(tag, "_tracking"))
+  tracking_data <- H5Fopen(file_path)
   
   # Read coordinates data from the HDF5 file
-  assign(paste0(tag, "_tracking_data"), as.data.frame(h5read(tracking_data, name="/df_with_missing/table", compoundAsDataFrame = FALSE)$values_block_0), envir = .GlobalEnv)
-  tracking_coordinates <- get(paste0(tag, "_tracking_data"))
+  assign(paste0(tag, "_tracking_coordinates"), as.data.frame(h5read(tracking_data, name="/df_with_missing/table", compoundAsDataFrame = FALSE)$values_block_0), envir = .GlobalEnv)
+  tracking_coordinates <- get(paste0(tag, "_tracking_coordinates"))
   
   # Extract column names
   tracking_names = h5readAttributes(tracking_data, name="/df_with_missing/table")$values_block_0_kind
@@ -43,7 +42,7 @@ tracking_load <- function(file_path, tag){
   
   # Set row names to tracking coordinates
   rownames(tracking_coordinates) <- get(paste0(tag, "_row_names"))
-  assign(paste0(tag, "_tracking_data"), tracking_coordinates, envir = .GlobalEnv)
+  assign(paste0(tag, "_tracking_coordinates"), tracking_coordinates, envir = .GlobalEnv)
   
   # Clean up
   rm(tracking_coordinates, tracking_data)
