@@ -2,7 +2,7 @@ library(readxl)
 library(ggplot2)
 library(rgl)
 
-# set working directory to contain 'BlackBox Summary Data.xlsx'
+# set working directory to contain 'BlackBox Summary Data.xlsx' before running below
 data <- as.data.frame(read_xlsx('BlackBox Summary Data.xlsx'))
 rownames(data) <- data[,1]
 data <- data[,-1]
@@ -22,31 +22,30 @@ pca_data <- na.omit(pca_data)
 pca_df <- as.data.frame(pca$x)
 
 # Make group (SCI or SHAM) factor
-group <- factor(rep(c("SCI","SHAM"), each = 64, length.out = 128))
+model <- factor(rep(c("SCI","SHAM"), each = 64, length.out = 128))
 
-custom_colors <- c("SCI" = "#1f77b4", "SHAM" = "#ff7f0e")
+group <- factor(c(rep("Baseline_SCI", 8), rep("SCI_early", 16), rep("SCI_regen", 40), rep("SHAM", 64)))
+
+custom_colors <- c("Baseline_SCI" = "#F6A1BD", "SCI_early" = "#800000", "SCI_regen" = "#FF0066", "SHAM" = "#000000")
 
 pca_df$Group <- group
+pca_df$Model <- model
 Sample <- rep(c("B",1, 7, 14, 21, 28, 35, 42), each = 8, length.out = 128)
 pca_df$Sample <- Sample
 
 pca_plot <- function() {
-  # Filter data for SCI days 21-42
-  regen_days <- c(21, 28, 35, 42)
-  early_days <- 1
-  
-  sci_regen_df <<- pca_df[pca_df$Group == "SCI" & pca_df$Sample %in% regen_days,]
+  Baseline_SCI_df <<- pca_df[pca_df$Group == "Baseline_SCI",]
+  SCI_early_df <<- pca_df[pca_df$Group == "SCI_early",]
+  SCI_regen_df <<- pca_df[pca_df$Group == "SCI_regen",]
   SHAM_df <<- pca_df[pca_df$Group == "SHAM",]
-  SCI_df <<- pca_df[pca_df$Group == "SCI",]
-  early_SCI_df <<- pca_df[pca_df$Group == "SCI" & pca_df$Sample %in% early_days,]
   
   # Create the 2D PCA plot
   return(
     ggplot(pca_df, aes(x = PC1, y = PC2, color = Group)) +
     geom_point(size = 3) +
-    stat_ellipse(data = sci_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = "blue") +
-    stat_ellipse(data = early_SCI_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = "green") +
-    stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = "orange") +
+    stat_ellipse(data = SCI_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_regen']]) +
+    stat_ellipse(data = SCI_early_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[["SCI_early"]]) +
+    stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SHAM']]) +
     labs(title = "PCA of SCI",
          x = "Principal Component 1",
          y = "Principal Component 2") +
@@ -94,7 +93,7 @@ manova_analysis <- function() {
     manova_models <- list()
     
     for (sample in unique(pca_df$Sample)) {
-      model <- manova(cbind(PC1, PC2) ~ Group,
+      model <- manova(cbind(PC1, PC2) ~ Model,
                       data = pca_df[pca_df$Sample == sample, ])
       manova_models[[sample]] <- model
     }
@@ -104,9 +103,9 @@ manova_analysis <- function() {
   
   manova_models_list <- manova_tests()
   manova_models_list[["Bvs42"]] <-
-    manova(cbind(PC1, PC2) ~ Group, data = pca_df[
-      (pca_df$Sample == "B" & pca_df$Group == "SHAM") |
-        (pca_df$Sample == "42" & pca_df$Group == "SCI"),
+    manova(cbind(PC1, PC2) ~ Model, data = pca_df[
+      (pca_df$Sample == "B" & pca_df$Model == "SHAM") |
+        (pca_df$Sample == "42" & pca_df$Model == "SCI"),
     ])
   
   manova_pvals_df <- data.frame(
@@ -116,7 +115,7 @@ manova_analysis <- function() {
   
   for (model_name in names(manova_models_list)) {
     manova_summary <- summary(manova_models_list[[model_name]])
-    p_value <- manova_summary$stats["Group", "Pr(>F)"]
+    p_value <- manova_summary$stats["Model", "Pr(>F)"]
     manova_pvals_df <- rbind(manova_pvals_df, data.frame(model = model_name, p_value = p_value))
   }
   
