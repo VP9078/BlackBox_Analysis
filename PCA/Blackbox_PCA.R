@@ -2,13 +2,19 @@ library(readxl)
 library(ggplot2)
 library(rgl)
 
-# set working directory to contain 'Blackbox_Consolidated_Data.xlsx'
-data <- as.data.frame(read_xlsx('Blackbox_Consolidated_Data.xlsx'))
+# set working directory to contain 'BlackBox Summary Data.xlsx'
+data <- as.data.frame(read_xlsx('BlackBox Summary Data.xlsx'))
 rownames(data) <- data[,1]
 data <- data[,-1]
 
-features <- c("front_paws_distance (pixel)",	"hind_paws_distance (pixel)",	"ankle_distance (pixel)",	"hip_width (pixel)",	"hind_left_paw_angle (degree)",	"hind_right_paw_angle (degree)",	"distance_traveled (pixel)",	"acceleration_variability (standard deviation)",	"empty_bins_counts", "fthp_spd_avgs")
+features <- c("front_paws_distance (pixel)",
+              "hind_paws_distance (pixel)",
+              "distance_traveled (pixel)",
+              "femur_width (pixel)",
+              "LHP_paw-angle (degree)",
+              "RHP_paw-angle (degree)")
 features <- features[features %in% colnames(data)]
+print(features)
 pca_data <- data[, features]
 
 pca <- prcomp(pca_data, scale=TRUE)
@@ -119,6 +125,8 @@ manova_analysis <- function() {
     levels = c("B", "1", "7", "14", "21", "28", "35", "42", "Bvs42")
   )
   manova_pvals_df$asterisk <- ifelse(manova_pvals_df$p_value < 0.05, "*", "")
+  
+  assign("manova_pvals_df", manova_pvals_df, envir=.GlobalEnv)
   
   ggplot(manova_pvals_df, aes(x = model, y = p_value)) +
     geom_bar(stat = "identity", fill = "steelblue", width = 0.6) +
