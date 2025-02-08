@@ -104,7 +104,7 @@ manova_analysis <- function() {
   manova_models_list <- manova_tests()
   manova_models_list[["Bvs42"]] <-
     manova(cbind(PC1, PC2) ~ Sample, data = pca_df[
-      (pca_df$Sample == "B" & pca_df$Model == "SHAM") |
+      (pca_df$Sample == "B" & pca_df$Model == "SCI") |
         (pca_df$Sample == "42" & pca_df$Model == "SCI"),
     ])
   
