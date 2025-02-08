@@ -103,7 +103,7 @@ manova_analysis <- function() {
   
   manova_models_list <- manova_tests()
   manova_models_list[["Bvs42"]] <-
-    manova(cbind(PC1, PC2) ~ Model, data = pca_df[
+    manova(cbind(PC1, PC2) ~ Sample, data = pca_df[
       (pca_df$Sample == "B" & pca_df$Model == "SHAM") |
         (pca_df$Sample == "42" & pca_df$Model == "SCI"),
     ])
@@ -115,7 +115,7 @@ manova_analysis <- function() {
   
   for (model_name in names(manova_models_list)) {
     manova_summary <- summary(manova_models_list[[model_name]])
-    p_value <- manova_summary$stats["Model", "Pr(>F)"]
+    p_value <- manova_summary$stats[1, "Pr(>F)"]
     manova_pvals_df <- rbind(manova_pvals_df, data.frame(model = model_name, p_value = p_value))
   }
   
@@ -123,22 +123,22 @@ manova_analysis <- function() {
     manova_pvals_df$model,
     levels = c("B", "1", "7", "14", "21", "28", "35", "42", "Bvs42")
   )
-  manova_pvals_df$asterisk <- ifelse(manova_pvals_df$p_value < 0.05, "*", "")
   
+  manova_pvals_df$label <- lapply(manova_pvals_df$p_value, function(pval) {
+    if(pval < 0.0001) "<0.0001" else round(pval, digits=4)
+  })
+
   assign("manova_pvals_df", manova_pvals_df, envir=.GlobalEnv)
   
   ggplot(manova_pvals_df, aes(x = model, y = p_value)) +
     geom_bar(stat = "identity", fill = "steelblue", width = 0.6) +
     geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") +
-    geom_text(aes(label = asterisk), vjust = -0.5, color = "black", size = 5) +
+    geom_text(aes(label = label), vjust = -0.5, color = "black", size = 2) +
     labs(
       x = "Model",
       y = "p-value",
       title = "MANOVA p-values with Significance Cutoff",
-      caption =
-        "* indicates statistical significance (p-value < 0.05)
-    Bvs42 - Baseline (SHAM) vs post-SCI Day 42 (SCI)"
-    ) +
+      caption = "Bvs42 - Baseline (SHAM) vs post-SCI Day 42 (SCI)") +
     theme_minimal() +
     theme(plot.title = element_text(face="bold", hjust = 0.5))
 }
