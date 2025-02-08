@@ -189,7 +189,7 @@ manova_analysis <- function() {
       x = "Model",
       y = "p-value",
       title = "MANOVA p-values with Significance Cutoff",
-      caption = "Bvs42 - Baseline (SHAM) vs post-SCI Day 42 (SCI)") +
+      caption = "Bvs42 - Baseline (SCI) vs post-SCI Day 42 (SCI)") +
     theme_minimal() +
     theme(plot.title = element_text(face="bold", hjust = 0.5))
 }
