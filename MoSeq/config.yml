@@ -1,0 +1,188 @@
+
+
+#==================== ANATOMY =====================#
+
+# used to access columns in the keypoint data
+bodyparts:
+- tailtip
+- tailbase
+- anal
+- genital
+- hip
+- sternumtail
+- sternumhead
+- neck
+- snout
+- lcheek
+- rcheek
+- lhip
+- rhip
+- lshoulder
+- rshoulder
+- lankle
+- lhpaw
+- lhpd1b
+- lhpd1t
+- lhpd2b
+- lhpd2t
+- lhpd3b
+- lhpd3t
+- lhpd4b
+- lhpd4t
+- lhpd5b
+- lhpd5t
+- lfpaw
+- lfpd1b
+- lfpd1t
+- lfpd2b
+- lfpd2t
+- lfpd3b
+- lfpd3t
+- lfpd4b
+- lfpd4t
+- rankle
+- rhpaw
+- rhpd1b
+- rhpd1t
+- rhpd2b
+- rhpd2t
+- rhpd3b
+- rhpd3t
+- rhpd4b
+- rhpd4t
+- rhpd5b
+- rhpd5t
+- rfpaw
+- rfpd1b
+- rfpd1t
+- rfpd2b
+- rfpd2t
+- rfpd3b
+- rfpd3t
+- rfpd4b
+- rfpd4t
+
+# determines the subset of bodyparts to use for modeling and the order in which they are represented
+use_bodyparts:
+- tailtip
+- tailbase
+- anal
+- genital
+- hip
+- sternumtail
+- sternumhead
+- neck
+- snout
+- lcheek
+- rcheek
+- lhip
+- rhip
+- lshoulder
+- rshoulder
+- lankle
+- lhpaw
+- lfpaw
+- rankle
+- rhpaw
+- rfpaw
+
+# used for visualization only
+skeleton:
+- - tailtip
+  - tailbase
+- - tailbase
+  - hip
+- - hip
+  - sternumtail
+- - sternumtail
+  - sternumhead
+- - sternumhead
+  - neck
+- - snout
+  - lcheek
+- - snout
+  - rcheek
+- - lcheek
+  - neck
+- - rcheek
+  - neck
+
+# used to initialize heading
+anterior_bodyparts:
+- snout
+
+# used to initialize heading
+posterior_bodyparts:
+- anal
+
+
+#==================== FITTING =====================#
+
+# upper bound of uniform noise added to the data during initial AR-HMM fitting; this is used to regularize the model
+added_noise_level: 0.1
+
+# number of frames used to fit the PCA model during initialization
+PCA_fitting_num_frames: 3000000
+
+# used to define outliers for interpolation when the model is initialized
+conf_threshold: 0.5
+
+
+#================== HYPER PARAMS ==================#
+
+# parameters to convert neural net likelihoods to error size priors
+error_estimator:
+  intercept: 0.25
+  slope: -0.5
+
+# keypoint observation hyperparameters
+obs_hypparams:
+  nu_s: 5
+  nu_sigma: 100000.0
+  sigmasq_0: 0.1
+  sigmasq_C: 0.1
+
+# autoregressive hyperparameters
+ar_hypparams:
+  K_0_scale: 10.0
+  S_0_scale: 0.01
+  latent_dim: 4
+  nlags: 3
+
+# transition hyperparameters
+trans_hypparams:
+  alpha: 5.7
+  gamma: 1000.0
+  kappa: 1000000.0
+  num_states: 100
+
+# centroid movement hyperparameters
+cen_hypparams:
+  sigmasq_loc: 0.5
+
+
+#===================== OTHER ======================#
+
+# suffix used to match videos to recording names; this can usually be left empty (see `util.find_matching_videos` for details)
+recording_name_suffix: ''
+
+# whether to print progress messages during fitting
+verbose: false
+
+# pseudocount used regularize neural network confidences
+conf_pseudocount: 0.001
+
+# directory with videos from which keypoints were derived (used for crowd movies)
+video_dir: /content/drive/MyDrive/All_data/videos
+
+# colormap used for visualization; see `matplotlib.cm.get_cmap` for options
+keypoint_colormap: autumn
+
+# whether to whiten principal components; used to initialize the latent pose trajectory `x`
+whiten: true
+
+# whether to keep the heading angle fixed; this should only be True if the pose is constrained to a narrow range of angles, e.g. a headfixed mouse.
+fix_heading: false
+
+# data are broken up into segments to parallelize fitting
+seg_length: 10000
