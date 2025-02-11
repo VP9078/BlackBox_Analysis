@@ -194,8 +194,8 @@ for (i in seq_along(files)) {
   rhpaw_speed_avg <- get_speed_avg(tag, "rhpaw")
   lhpaw_speed_avg <- get_speed_avg(tag, "lhpaw")
   
-  favg <- mean(rfpaw_speed_avg, lfpaw_speed_avg)
-  havg <- mean(rhpaw_speed_avg, lhpaw_speed_avg)
+  favg <- mean(c(rfpaw_speed_avg, lfpaw_speed_avg))
+  havg <- mean(c(rhpaw_speed_avg, lhpaw_speed_avg))
   
   fthp_spd_avgs <- c(fthp_spd_avgs, favg/havg)
 }
