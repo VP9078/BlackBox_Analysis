@@ -109,9 +109,9 @@ get_empty_bins_count <- function(tag, body_part) {
   # Make coordinate data frame
   coord_df <- as.data.frame(data.frame(x = x_row, y = y_row))
   
-  # Define grid edges for 50x50 bins over 30x30 area
-  x_edges <- seq(0, 30, length.out = 51)
-  y_edges <- seq(0, 30, length.out = 51)
+  # Define grid edges for 50x50 bins over 15.24x15.24 area
+  x_edges <- seq(0, 15.24, length.out = 51)
+  y_edges <- seq(0, 15.24, length.out = 51)
   
   # Initialize a matrix to count occurrences in each bin
   bin_counts <- matrix(0, nrow = 50, ncol = 50)
