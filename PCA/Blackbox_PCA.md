@@ -43,9 +43,42 @@ pca_df <- as.data.frame(pca$x)
 # Make group (SCI or SHAM) factor
 model <- factor(rep(c("SCI","SHAM"), each = 64, length.out = 128))
 
-group <- factor(c(rep("Baseline_SCI", 8), rep("SCI_early", 16), rep("SCI_regen", 40), rep("SHAM", 64)))
-
-custom_colors <- c("Baseline_SCI" = "#F6A1BD", "SCI_early" = "#800000", "SCI_regen" = "#FF0066", "SHAM" = "#000000")
+group <- factor(c(rep("Baseline_SCI", 8),
+                  rep("SCI_1", 8),
+                  rep("SCI_7", 8),
+                  rep("SCI_14", 8),
+                  rep("SCI_21", 8),
+                  rep("SCI_28", 8),
+                  rep("SCI_35", 8),
+                  rep("SCI_42", 8),
+                  rep("Baseline_SHAM", 8),
+                  rep("SHAM_1", 8),
+                  rep("SHAM_7", 8),
+                  rep("SHAM_14", 8),
+                  rep("SHAM_21", 8),
+                  rep("SHAM_28", 8),
+                  rep("SHAM_35", 8),
+                  rep("SHAM_42", 8)))
+                  
+custom_colors <- c(
+  "Baseline_SCI" = "#67001f",
+  "SCI_1" = "#ff0000",
+  "SCI_7" = "#df65b0",
+  "SCI_14" = "#e7298a",
+  "SCI_21" = "#ce1256",
+  "SCI_28" = "#980043",
+  "SCI_35" = "#6a00a8",
+  "SCI_42" = "#4a0072",
+  
+  "Baseline_SHAM" = "#00441b",
+  "SHAM_1" = "#1a9850",
+  "SHAM_7" = "#66bd63",
+  "SHAM_14" = "#41b6c4",
+  "SHAM_21" = "#1d91c0",
+  "SHAM_28" = "#2166ac",
+  "SHAM_35" = "#08306b",
+  "SHAM_42" = "#000000"
+)
 
 pca_df$Group <- group
 pca_df$Model <- model
@@ -57,26 +90,24 @@ pca_df$Sample <- Sample
 
 ``` r
 pca_plot <- function() {
-  Baseline_SCI_df <<- pca_df[pca_df$Group == "Baseline_SCI",]
-  SCI_early_df <<- pca_df[pca_df$Group == "SCI_early",]
-  SCI_regen_df <<- pca_df[pca_df$Group == "SCI_regen",]
-  SHAM_df <<- pca_df[pca_df$Group == "SHAM",]
+  SCI_early_df <<- pca_df[pca_df$Group %in% c("SCI_1", "SCI_7"),]
+  SCI_regen_df <<- pca_df[pca_df$Group %in% c("SCI_14", "SCI_21", "SCI_28", "SCI_35", "SCI_42"),]
+  SHAM_df <<- pca_df[pca_df$Model == "SHAM",]
   
   # Create the 2D PCA plot
   return(
     ggplot(pca_df, aes(x = PC1, y = PC2, color = Group)) +
     geom_point(size = 3) +
-    stat_ellipse(data = SCI_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_regen']]) +
-    stat_ellipse(data = SCI_early_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[["SCI_early"]]) +
-    stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SHAM']]) +
-    labs(title = "PCA of SCI",
+    stat_ellipse(data = SCI_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_42']]) +
+    stat_ellipse(data = SCI_early_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_1']]) +
+    stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SHAM_1']]) +
+    labs(title = "Significant Features Principal Component Analysis",
          x = "Principal Component 1",
          y = "Principal Component 2") +
     scale_color_manual(values = custom_colors) +
     scale_fill_manual(values = custom_colors) +
     theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    geom_text(data =, aes(label = Sample), vjust = -0.5, size = 3)
+    theme(plot.title = element_text(hjust = 0.5))
   )
 }
 
