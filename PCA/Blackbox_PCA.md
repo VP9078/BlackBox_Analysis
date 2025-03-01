@@ -63,20 +63,20 @@ group <- factor(c(rep("Baseline_SCI", 8),
 custom_colors <- c(
   "Baseline_SCI" = "#67001f",
   "SCI_1" = "#ff0000",
-  "SCI_7" = "#df65b0",
-  "SCI_14" = "#e7298a",
-  "SCI_21" = "#ce1256",
-  "SCI_28" = "#980043",
-  "SCI_35" = "#6a00a8",
-  "SCI_42" = "#4a0072",
+  "SCI_7" = "#ff6d00",
+  "SCI_14" = "#ff66b2",
+  "SCI_21" = "#b23dc6",
+  "SCI_28" = "#6b5bd6",
+  "SCI_35" = "#2b69d1",
+  "SCI_42" = "#002b88",
   
-  "Baseline_SHAM" = "#00441b",
-  "SHAM_1" = "#1a9850",
-  "SHAM_7" = "#66bd63",
-  "SHAM_14" = "#41b6c4",
-  "SHAM_21" = "#1d91c0",
-  "SHAM_28" = "#2166ac",
-  "SHAM_35" = "#08306b",
+  "Baseline_SHAM" = "#000000",
+  "SHAM_1" = "#000000",
+  "SHAM_7" = "#000000",
+  "SHAM_14" = "#000000",
+  "SHAM_21" = "#000000",
+  "SHAM_28" = "#000000",
+  "SHAM_35" = "#000000",
   "SHAM_42" = "#000000"
 )
 
@@ -99,7 +99,6 @@ pca_plot <- function() {
     ggplot(pca_df, aes(x = PC1, y = PC2, color = Group)) +
     geom_point(size = 3) +
     stat_ellipse(data = SCI_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_42']]) +
-    stat_ellipse(data = SCI_early_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_1']]) +
     stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SHAM_1']]) +
     labs(title = "Significant Features Principal Component Analysis",
          x = "Principal Component 1",
