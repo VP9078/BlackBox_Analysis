@@ -7,7 +7,7 @@ library(writexl)
 ### Load Tracking Data code:
 tracking_load <- function(file_path, tag){
   pixels_to_cm <<- 0.03
-  grid_size <<- 30
+  grid_size <<- 15.24
   fps <<- 45
   time_between_frames <<- 1/fps
   
