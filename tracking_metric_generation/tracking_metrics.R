@@ -156,6 +156,14 @@ get_speed_avg <- function(tag, body_part) {
 ### Process Files
 files <- list.files()
 
+# Sort files (earliest to latest && mice 1 to 16)
+
+extract_date <- function(x) sub("^(\\d{4}-\\d{2}-\\d{2})_.*", "\\1", x)
+extract_number <- function(x) as.numeric(sub(".*_(\\d+)-tracking.h5", "\\1", x))
+sorted_files <- as.vector(unlist(tapply(files, extract_date(files), function(group) {
+  group[order(extract_number(group))]
+}, simplify = FALSE)))
+
 # Time points and dataframe
 time_pts <- c("Baseline", "1 day post SCI", "7 days post SCI", "14 days post SCI", "21 days post SCI", "28 days post SCI", "35 days post SCI", "42 days post SCI")
 
@@ -166,12 +174,12 @@ speed_avgs <- c()
 fthp_spd_avgs <- c()
 
 k <- 0
-for (i in seq_along(files)) {
+for (i in seq_along(sorted_files)) {
   if ((i - 1) %% 16 == 0) k <- k + 1
   
   # Load tracking data
-  file_path <- file.path(getwd(), files[i])
-  mouse_num <- str_extract(files[i], "(?<=_)[^_]*(?=-tracking)")
+  file_path <- file.path(getwd(), sorted_files[i])
+  mouse_num <- str_extract(sorted_files[i], "(?<=_)[^_]*(?=-tracking)")
   tag <- paste(time_pts[k], mouse_num, sep = "_")
   
   tracking_load(file_path, tag)
