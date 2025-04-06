@@ -139,29 +139,36 @@ manova_analysis <- function() {
         (pca_df$Sample == "42" & pca_df$Model == "SCI"),
     ])
   
-  manova_pvals_df <- data.frame(
+  manova_results_df <- data.frame(
     model = character(),
-    p_value = numeric()
+    p_value = numeric(),
+    pillai_trace = numeric()
   )
   
   for (model_name in names(manova_models_list)) {
-    manova_summary <- summary(manova_models_list[[model_name]])
+    manova_summary <- summary(manova_models_list[[model_name]], test = "Pillai")
     p_value <- manova_summary$stats[1, "Pr(>F)"]
-    manova_pvals_df <- rbind(manova_pvals_df, data.frame(model = model_name, p_value = p_value))
+    pillai_trace <- manova_summary$stats[1, "Pillai"]
+    
+    manova_results_df <- rbind(manova_results_df, data.frame(
+      model = model_name,
+      p_value = p_value,
+      pillai_trace = pillai_trace
+    ))
   }
   
-  manova_pvals_df$model <- factor(
-    manova_pvals_df$model,
+  manova_results_df$model <- factor(
+    manova_results_df$model,
     levels = c("BL", "1", "7", "14", "21", "28", "35", "42", "BLvs42")
   )
   
-  manova_pvals_df$label <- lapply(manova_pvals_df$p_value, function(pval) {
+  manova_results_df$label <- lapply(manova_results_df$p_value, function(pval) {
     if(pval < 0.0001) "<0.0001" else round(pval, digits=4)
   })
 
-  assign("manova_pvals_df", manova_pvals_df, envir=.GlobalEnv)
+  assign("manova_results_df", manova_results_df, envir=.GlobalEnv)
   
-  ggplot(manova_pvals_df, aes(x = model, y = p_value)) +
+  ggplot(manova_results_df, aes(x = model, y = p_value)) +
     geom_bar(stat = "identity", fill = "steelblue", width = 0.6) +
     geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") +
     geom_text(aes(label = label), vjust = -0.5, color = "black", size = 2) +
