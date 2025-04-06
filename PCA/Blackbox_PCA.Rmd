@@ -76,7 +76,7 @@ custom_colors <- c(
 
 pca_df$Group <- group
 pca_df$Model <- model
-Sample <- rep(c("B",1, 7, 14, 21, 28, 35, 42), each = 8, length.out = 128)
+Sample <- rep(c("BL",1, 7, 14, 21, 28, 35, 42), each = 8, length.out = 128)
 pca_df$Sample <- Sample
 ```
 
@@ -93,6 +93,7 @@ pca_plot <- function() {
     geom_point(size = 3) +
     stat_ellipse(data = SCI_regen_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SCI_42']]) +
     stat_ellipse(data = SHAM_df, aes(x = PC1, y = PC2), type = "norm", level = 0.95, color = custom_colors[['SHAM_1']]) +
+    geom_text(data =, aes(label = Sample), vjust = -0.5, size = 3) +
     labs(title = "Significant Features Principal Component Analysis",
          x = "Principal Component 1",
          y = "Principal Component 2") +
@@ -162,9 +163,9 @@ manova_analysis <- function() {
   }
   
   manova_models_list <- manova_tests()
-  manova_models_list[["Bvs42"]] <-
+  manova_models_list[["BLvs42"]] <-
     manova(cbind(PC1, PC2) ~ Sample, data = pca_df[
-      (pca_df$Sample == "B" & pca_df$Model == "SCI") |
+      (pca_df$Sample == "BL" & pca_df$Model == "SCI") |
         (pca_df$Sample == "42" & pca_df$Model == "SCI"),
     ])
   
@@ -181,7 +182,7 @@ manova_analysis <- function() {
   
   manova_pvals_df$model <- factor(
     manova_pvals_df$model,
-    levels = c("B", "1", "7", "14", "21", "28", "35", "42", "Bvs42")
+    levels = c("BL", "1", "7", "14", "21", "28", "35", "42", "BLvs42")
   )
   
   manova_pvals_df$label <- lapply(manova_pvals_df$p_value, function(pval) {
@@ -198,7 +199,7 @@ manova_analysis <- function() {
       x = "Model",
       y = "p-value",
       title = "MANOVA p-values with Significance Cutoff",
-      caption = "Bvs42 - Baseline (SCI) vs post-SCI Day 42 (SCI)") +
+      caption = "BLvs42 - Baseline (SCI) vs post-SCI Day 42 (SCI)") +
     theme_minimal() +
     theme(plot.title = element_text(face="bold", hjust = 0.5))
 }
