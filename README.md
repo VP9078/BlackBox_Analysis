@@ -1,2 +1,2 @@
 # BlackBox Analysis
-Code used in Comprehensive Quantitative Assessment of Motor Recovery in Spinal Cord Injury Using the Blackbox System
+Unbiased Quantification of Persistent Postural and Motor Deficits Following Spinal Cord Injury in Mice
